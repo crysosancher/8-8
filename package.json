@@ -1,0 +1,27 @@
+{
+	"name": "8x8-kpi-apis",
+	"version": "1.0.0",
+	"description": "Simple Express template for 8*8 KPI APIs",
+	"main": "src/index.js",
+	"type": "commonjs",
+	"scripts": {
+		"dev": "nodemon src/index.js",
+		"start": "node src/index.js"
+	},
+	"keywords": [
+		"express",
+		"api",
+		"kpi"
+	],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"axios": "^1.7.2",
+		"dotenv": "^16.4.5",
+		"express": "^4.19.2",
+		"swagger-ui-express": "^5.0.1"
+	},
+	"devDependencies": {
+		"nodemon": "^3.1.4"
+	}
+}
