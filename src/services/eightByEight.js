@@ -81,10 +81,86 @@ async function createWebhook(type, url, enabled = true) {
   return res.data;
 }
 
+/**
+ * Normalise a raw CDR/export record into the same shape that VSS webhooks
+ * produce, so it can be stored in callStore without changes.
+ */
+function normalizeRecord(r) {
+  return {
+    sessionId: r.sessionId || r.session_id || r.id || null,
+    subAccountId: r.subAccountId || r.sub_account_id || subAccountId,
+    sessionStatus:
+      r.sessionStatus || r.status || r.callStatus || r.call_status || "UNKNOWN",
+    startTime: r.startTime || r.start_time || r.startdate || null,
+    endTime: r.endTime || r.end_time || r.enddate || null,
+    lastAction: r.lastAction || r.last_action || null,
+    callCount: r.callCount || r.call_count || 1,
+    errorDetails: r.errorDetails || r.error_details || null,
+    details: r.details || r.legs || {},
+  };
+}
+
+/**
+ * Start a log-export job, poll until COMPLETED (up to ~60 s), then fetch and
+ * return the records normalised into callStore shape.
+ *
+ * @param {string} from  ISO-8601 start datetime
+ * @param {string} to    ISO-8601 end datetime
+ * @param {string} [apiKeyOverride]
+ * @returns {Promise<object[]>} Normalised session records
+ */
+async function syncSessionsFromExport(from, to, apiKeyOverride) {
+  // 1. Start export job
+  const job = await startLogExport(from, to, 0, apiKeyOverride);
+  const jobId = job.jobId || job.id || job.exportId;
+  if (!jobId) {
+    throw new Error(
+      `Could not determine jobId from export response: ${JSON.stringify(job)}`,
+    );
+  }
+
+  // 2. Poll for completion (max 30 attempts × 2 s = 60 s)
+  let result;
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    result = await getLogExportResult(jobId, apiKeyOverride);
+    const status = (result.status || result.jobStatus || "").toUpperCase();
+    if (status === "COMPLETED" || status === "DONE") break;
+    if (status === "FAILED" || status === "ERROR") {
+      throw new Error(`Export job failed: ${JSON.stringify(result)}`);
+    }
+  }
+
+  const finalStatus = (result.status || result.jobStatus || "").toUpperCase();
+  if (finalStatus !== "COMPLETED" && finalStatus !== "DONE") {
+    throw new Error(
+      "Export job did not complete within 60 s. Try again later.",
+    );
+  }
+
+  // 3. Retrieve records — either inline or via a presigned download URL
+  const downloadUrl =
+    result.url || result.downloadUrl || result.fileUrl || result.downloadLink;
+
+  let rawRecords = [];
+
+  if (downloadUrl) {
+    const dlRes = await axios.get(downloadUrl);
+    rawRecords = Array.isArray(dlRes.data)
+      ? dlRes.data
+      : dlRes.data?.records || dlRes.data?.data || [];
+  } else {
+    rawRecords = result.records || result.data || result.messages || [];
+  }
+
+  return rawRecords.map(normalizeRecord);
+}
+
 module.exports = {
   sendCallflow,
   startLogExport,
   getLogExportResult,
+  syncSessionsFromExport,
   listWebhooks,
   createWebhook,
 };

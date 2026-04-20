@@ -5,7 +5,6 @@ const swaggerSpec = require("./swagger");
 
 const kpiRoutes = require("./routes/kpis");
 const webhookRoutes = require("./routes/webhook");
-const logRoutes = require("./routes/logs");
 
 const app = express();
 
@@ -19,7 +18,6 @@ app.get("/health", (_req, res) => {
 // --- Routes ---
 app.use("/api/kpis", kpiRoutes);
 app.use("/api/webhook", webhookRoutes);
-app.use("/api/logs", logRoutes);
 
 // --- API Docs ---
 app.get("/api-docs.json", (_req, res) => {

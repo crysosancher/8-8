@@ -12,7 +12,14 @@ function getSessions(req) {
   if (from && to) {
     return callStore.getSessionsByDateRange(from, to);
   }
-  return callStore.getAllSessions();
+  // Default to month-to-date when no range supplied
+  const now = new Date();
+  const monthStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    1,
+  ).toISOString();
+  return callStore.getSessionsByDateRange(monthStart, now.toISOString());
 }
 
 function extractCallLegs(sessions) {
@@ -163,7 +170,7 @@ router.get("/status-breakdown", (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// KPI 7 — Peak Hour (bonus KPI)
+// KPI 7 — Peak Hour
 // GET /api/kpis/peak-hour?from=&to=
 // ---------------------------------------------------------------------------
 router.get("/peak-hour", (req, res) => {
@@ -200,7 +207,6 @@ router.get("/summary", (req, res) => {
   const legs = extractCallLegs(sessions);
   const total = sessions.length;
 
-  // Success / failure
   const completed = sessions.filter(
     (s) => s.sessionStatus === "COMPLETED",
   ).length;
@@ -209,7 +215,6 @@ router.get("/summary", (req, res) => {
     failureStatuses.includes(s.sessionStatus),
   ).length;
 
-  // Duration
   const durations = legs
     .filter((l) => typeof l.callDuration === "number")
     .map((l) => l.callDuration);
@@ -220,7 +225,6 @@ router.get("/summary", (req, res) => {
           (durations.reduce((a, b) => a + b, 0) / durations.length).toFixed(2),
         );
 
-  // Quality
   const mosValues = legs
     .filter((l) => l.callQuality && typeof l.callQuality.mos === "number")
     .map((l) => l.callQuality.mos);
@@ -231,7 +235,6 @@ router.get("/summary", (req, res) => {
           (mosValues.reduce((a, b) => a + b, 0) / mosValues.length).toFixed(2),
         );
 
-  // Breakdown
   const breakdown = {};
   for (const s of sessions) {
     const status = s.sessionStatus || "UNKNOWN";

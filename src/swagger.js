@@ -252,69 +252,6 @@ const swaggerSpec = {
         },
       },
     },
-    "/api/logs/export": {
-      post: {
-        tags: ["Logs"],
-        summary: "Start voice log export",
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["from", "to"],
-                properties: {
-                  from: {
-                    type: "string",
-                    example: "2026-04-01",
-                    description: "Start date/time for export",
-                  },
-                  to: {
-                    type: "string",
-                    example: "2026-04-19",
-                    description: "End date/time for export",
-                  },
-                  limit: {
-                    type: "integer",
-                    example: 0,
-                    description: "0 means no limit",
-                  },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: {
-            description: "Export job started",
-          },
-          400: {
-            description: "Validation error",
-          },
-        },
-      },
-    },
-    "/api/logs/export/{jobId}": {
-      get: {
-        tags: ["Logs"],
-        summary: "Get voice log export job status/result",
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            in: "path",
-            name: "jobId",
-            required: true,
-            schema: { type: "string" },
-          },
-        ],
-        responses: {
-          200: {
-            description: "Job status and report link when ready",
-          },
-        },
-      },
-    },
     "/api/webhook/vss": {
       post: {
         tags: ["Webhooks"],
