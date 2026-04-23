@@ -13,6 +13,7 @@ RUN npm ci
 # Copy source code
 COPY src ./src
 COPY entrypoint.sh ./
+RUN chmod +x /entrypoint.sh
 
 # Remove dev dependencies for production
 RUN npm prune --omit=dev
