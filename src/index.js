@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const config = require("./config");
 const swaggerSpec = require("./swagger");
@@ -9,6 +10,16 @@ const webhookRoutes = require("./routes/webhook");
 const app = express();
 
 app.use(express.json());
+
+// CORS middleware - allow cross-origin requests
+const corsOrigins = process.env.CORS_ORIGINS 
+  ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
+  : '*';
+app.use(cors({
+  origin: corsOrigins,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // --- Health check ---
 app.get("/health", (_req, res) => {
